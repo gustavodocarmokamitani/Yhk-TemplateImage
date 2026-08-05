@@ -174,6 +174,53 @@ const FALLBACK_PHOTOS: GalleryPhoto[] = [
   },
 ];
 
+// Same idea as FALLBACK_PHOTOS above, but shaped for the story section: two
+// generic placeholder chapters (6 photos each, so the grid renders 3x2) that
+// only show up when /api/story returns no real chapters yet.
+function storyPhoto(id: string, unsplashId: string, width: number, height: number): GalleryPhoto {
+  return {
+    id,
+    url: `https://images.unsplash.com/photo-${unsplashId}?w=1600&q=80`,
+    thumbUrl: `https://images.unsplash.com/photo-${unsplashId}?w=800&q=80`,
+    width,
+    height,
+    takenAt: null,
+    isVideo: false,
+    lat: null,
+    lon: null,
+    city: null,
+  };
+}
+
+const FALLBACK_STORY_CHAPTERS: ResolvedStoryChapter[] = [
+  {
+    id: "fallback-chapter-1",
+    title: "Chegada",
+    text: "Espaço para contar como começou a viagem — troque este texto e as fotos pelas suas.",
+    photos: [
+      storyPhoto("story-1a", "1554080353-a576cf803bda", 1200, 1500),
+      storyPhoto("story-1b", "1517841905240-472988babdf9", 1600, 1067),
+      storyPhoto("story-1c", "1495954484750-af469f2f9be5", 1200, 1600),
+      storyPhoto("story-1d", "1521737604893-d14cc237f11d", 1600, 1200),
+      storyPhoto("story-1e", "1470071459604-3b5ec3a7fe05", 1200, 1500),
+      storyPhoto("story-1f", "1500530855697-b586d89ba3ee", 1600, 1067),
+    ],
+  },
+  {
+    id: "fallback-chapter-2",
+    title: "Explorando por aí",
+    text: "Outro capítulo de exemplo — cada um vira uma seção com texto de um lado e fotos do outro.",
+    photos: [
+      storyPhoto("story-2a", "1511300636408-a63a89df3482", 1200, 1600),
+      storyPhoto("story-2b", "1493246507139-91e8fad9978e", 1600, 1200),
+      storyPhoto("story-2c", "1445205170230-053b83016050", 1200, 1500),
+      storyPhoto("story-2d", "1554080353-a576cf803bda", 1200, 1500),
+      storyPhoto("story-2e", "1517841905240-472988babdf9", 1600, 1067),
+      storyPhoto("story-2f", "1495954484750-af469f2f9be5", 1200, 1600),
+    ],
+  },
+];
+
 // The trip happened in Japan, so "day" boundaries are computed in Asia/Tokyo
 // time regardless of the viewer's own timezone — otherwise two friends
 // browsing from different countries (or a shift right around UTC midnight)
@@ -303,9 +350,17 @@ export default function GalleryPage() {
     fetch("/api/story")
       .then((res) => res.json())
       .then((json: { chapters: ResolvedStoryChapter[] }) => {
-        if (!cancelled) setStoryChapters(json.chapters ?? []);
+        if (!cancelled) {
+          setStoryChapters(
+            json.chapters && json.chapters.length > 0
+              ? json.chapters
+              : FALLBACK_STORY_CHAPTERS,
+          );
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setStoryChapters(FALLBACK_STORY_CHAPTERS);
+      });
     return () => {
       cancelled = true;
     };
